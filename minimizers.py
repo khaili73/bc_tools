@@ -1,22 +1,25 @@
-#!/Users/hekate/anaconda3/bin/python3.7
+#!/Users/hekate/anaconda3/bin/python3.6
 
-#import hashlib
+import numpy as np
 
-dna = "ACGTACTTGTACACCGTACAAGGGCTAGAGGGCTAGGCTACTAAATCAG"
+r = "ACGTACTTGTACACCGTACAAGGGCTAGAGGGCTAGGCTACTAAATCAG"
+bc = "ACGTACT"
 
-def get_kmers(k, dna):
-   mers = []
-   for i in range(len(dna) - k + 1):
-      mers.append(dna[i:i+k])
-   return mers
+def get_minimizer(k, read):
+   minimizer = 31
+   for i in range(len(read) - k + 1):
+      hashed_kmer = hash(read[i:i+k]) % 31 #jak dobrac odpowiednie modulo; co zrobic z wartosciami ujemnymi
+      if hashed_kmer <= minimizer:
+         minimizer = hashed_kmer
+   return minimizer
 
-def get_minimizer(mers):
-   h_mers = []
-   for mer in mers:
-      #h_mers.append(hashlib.md5(mer.encode()))
-      h_mers.append(hash(mer))
-   return min(h_mers)
+reads = [(r, bc)]
+minimizers = {}
 
-mers = get_kmers(3,dna)
-print(get_minimizer(mers))
+for read, barcode in reads:
+   if barcode not in minimizers.keys():
+      minimizers[barcode] = [] #zmienic na array
+   minimizers[barcode].append(get_minimizer(5,r))
 
+   
+print(minimizers)
