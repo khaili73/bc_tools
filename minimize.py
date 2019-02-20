@@ -3,8 +3,15 @@
 import gzip
 import collections
 from Bio import SeqIO
+import numpy as np
+import matplotlib.pyplot as plt
 
-barcodes_file = "barcoded.fastq.gz", "barcodes2.fastq.gz"
+barcodes_file = "barcodes.fastq.gz", "barcodes2.fastq.gz"
+
+#globals
+min_per_bc = {}
+mini_v = []
+
 '''
 numpy uint16 - 2 bajty w array
 2^8 - 2^16 histogramy dla różnych modulo
@@ -24,8 +31,14 @@ def barcode(record):
       return False
 
 def process_barcode(current_barcode, current_barcode_records, bc_min_dict):
+   minimizers = []
    for rec in current_barcode_records:
-      bc_min_dict[current_barcode].append(get_minimizer(20, str(rec.seq)))
+      minimizers.append(get_minimizer(21, str(rec.seq)))
+      #bc_min_dict[current_barcode].append(get_minimizer(20, str(rec.seq)))
+   minimizers.sort()
+   bc_min_dict[current_barcode] = np.array(minimizers, dtype="uint16")
+   min_per_bc[current_barcode] = len(minimizers)
+   mini_v.extend(minimizers)
    return bc_min_dict
 
 with gzip.open(barcodes_file[0], "rt") as file1, gzip.open(barcodes_file[1], "rt") as file2:
@@ -33,7 +46,7 @@ with gzip.open(barcodes_file[0], "rt") as file1, gzip.open(barcodes_file[1], "rt
    read_parsers = [SeqIO.parse(f, "fastq") for f in (file1, file2)]
    current_records = [next(parser) for parser in read_parsers]
    while read_parsers:
-      current_barcode = min(barcode(record) for record in current_records if barcode(record)) 
+      current_barcode = min(barcode(record) for record in current_records if barcode(record))
       current_barcode_records = []
       new_records = []
       for parser, record in zip(read_parsers, current_records):
@@ -45,6 +58,26 @@ with gzip.open(barcodes_file[0], "rt") as file1, gzip.open(barcodes_file[1], "rt
             except StopIteration:
                read_parsers.remove(parser)
                break
+         while barcode(current_record) == False:
+            try:
+               current_record=next(parser)
+            except StopIteration:
+               read_parsers.remove(parser)
          new_records.append(current_record)
       current_records = new_records
       d = process_barcode(current_barcode, current_barcode_records, bc_min_dict)
+
+print(min_per_bc.keys())
+print(min_per_bc.values())
+print(mini_v)
+
+bc_names = list(min_per_bc.keys())
+
+f, ax = plt.subplots(2, 1)
+
+ax[0].bar(min_per_bc.keys(), min_per_bc.values(), width = 0.2, color='g')
+ax[0].set_xticks(bc_names)
+ax[0].set_xticklabels(bc_names, rotation=65)
+ax[1].hist(mini_v, color='b')
+
+plt.show()
