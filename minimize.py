@@ -50,7 +50,16 @@ with ExitStack() as stack:
    current_records = [next(parser) for parser in read_parsers]
    with open("minimizers.tsv", "w") as out_mins, open("mins_per_bc.tsv", "w") as mbc:
       while read_parsers:
-         current_barcode = min(barcode(record) for record in current_records if barcode(record))
+         valid_current_records = []
+         for parser, record in zip(read_parsers, current_records):
+            while barcode(record) == False:
+               try:
+                  record=next(parser)
+               except:
+                  read_parsers.remove(parser)
+            valid_current_records.append(record)
+         current_records = valid_current_records
+         current_barcode = min(barcode(record) for record in current_records)
          current_barcode_records = []
          new_records = []
          for parser, record in zip(read_parsers, current_records):
@@ -62,11 +71,11 @@ with ExitStack() as stack:
                except StopIteration:
                   read_parsers.remove(parser)
                   break
-            while barcode(current_record) == False:
-               try:
-                  current_record=next(parser)
-               except StopIteration:
-                  read_parsers.remove(parser)
+            #while barcode(current_record) == False:
+            #   try:
+            #      current_record=next(parser)
+            #   except StopIteration:
+            #      read_parsers.remove(parser)
             new_records.append(current_record)
          current_records = new_records
          #d = process_barcode(current_barcode, current_barcode_records, bc_min_dict)
