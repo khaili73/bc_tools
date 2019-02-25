@@ -1,4 +1,4 @@
-#!/Users/hekate/anaconda3/bin/python3.6
+#!/usr/bin/env python3.6
 
 import gzip
 import collections
@@ -65,7 +65,6 @@ with ExitStack() as stack:
          current_barcode_records = []
          new_records = []
          for parser, record in zip(read_parsers, current_records):
-            print(current_records)
             current_record = record
             while barcode(current_record) == current_barcode:
                current_barcode_records.append(current_record)
@@ -85,7 +84,6 @@ with ExitStack() as stack:
          mins = process_barcode(current_barcode_records)
          for m in mins:
             out_mins.write(str(m)+"\n")
-         print(current_barcode)
          mbc.write(current_barcode + "\t" + str(len(mins)) + "\n")
 
 #generate plots
