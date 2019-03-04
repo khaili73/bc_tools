@@ -1,15 +1,19 @@
-#!/usr/bin/env python3.6
+#!/usr/bin/env python2.7
+
+import matplotlib
+matplotlib.use("AGG")
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-with open("minimizers.tsv", "r") as f:
+
+with open("/home/kwegrzyn/tools/minimizers.tsv", "r") as f:
    minimizers = []
    lines = f.readlines()
    for line in lines:
       minimizers.append(line.strip())    
 
-with open("mins_per_barcode.tsv", "r") as ff:
+with open("/home/kwegrzyn/tools/mins_per_bc.tsv", "r") as ff:
    min_per_bc = []
    lines = ff.readlines()
    for line in lines:
