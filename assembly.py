@@ -1,11 +1,12 @@
-#!/Users/hekate/anaconda3/bin/python3.6
+#!/usr/bin/env python
 
 from Bio import SeqIO
 import argparse
 import networkx as nx
 from itertools import product
 
-parser = argparse.ArgumentParser(description='Assembly contigs based on reads from input file.', epilog="And all the rest is (low level) magic.")
+library = "You are using %s networkx version. This program depends on version 2.2." % nx.__version__
+parser = argparse.ArgumentParser(description='Assembly contigs based on reads from input file.', epilog=library)
 parser.add_argument('infile', metavar=('input'), help='input fasta file with reads')
 parser.add_argument('outfile', metavar=('output'), help='output fasta file with contigs')
 args = parser.parse_args()
@@ -22,7 +23,7 @@ class DeBruijnGraph():
                   self.G.add_node(kmer.l_node)
                if kmer.r_node not in self.G.nodes():
                   self.G.add_node(kmer.r_node)
-               if (kmer.l_node, kmer.r_node) in self.G.edges:
+               if (kmer.l_node, kmer.r_node) in self.G.edges():
                   self.G.edges[kmer.l_node, kmer.r_node]['weight'] += 1 
                else:
                   self.G.add_edge(kmer.l_node, kmer.r_node, weight = 1)
@@ -42,17 +43,12 @@ class DeBruijnGraph():
             ends = get_end_nodes(sub)
             pairs = product(starts, ends)
             paths = []
-            #print(len(starts))
-            #print(len(ends))
             for pair in pairs:
-               #print(sub[pair[0]])
                try:
-                  path = nx.dijkstra_path(sub, pair[0], pair[1], weight = 'weight')
+                  path = nx.dijkstra_path(sub, *pair, weight = 'weight')
+                  paths.append(''.join(short_seq[-1] for short_seq in path))
                except Exception as e:
                   pass
-               paths.append("".join(path))
-               ###
-               #paths.append("".join([short_seq[-1] for short_seq in nx.dijkstra_path(sub, pair[0], pair[1], weight = 'weight')])) #unpack pair *pair
             if paths:
                contigs.append(max(paths, key=len))
          return contigs
@@ -74,7 +70,7 @@ def get_end_nodes(g):
 with open(args.infile, "rU") as handle:
    records =  SeqIO.parse(handle, "fasta")
    sequences = [str(record.seq) for record in records]
-   graph = DeBruijnGraph(sequences, k = 30)
+   graph = DeBruijnGraph(sequences, k = 31) 
    contigs = graph.extract_contigs()
 with open(args.outfile, 'w') as f:
     for item in contigs:
