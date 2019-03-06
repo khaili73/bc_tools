@@ -1,2 +1,3 @@
-# ngs
-Next generation sequencing methods, scripts and algorithms
+# tools
+
+Master Degree scripts used for de novo diploid genome assembly.
