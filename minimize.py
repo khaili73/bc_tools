@@ -7,6 +7,8 @@ import numpy as np
 import argparse
 from contextlib import ExitStack
 import re
+from datetime import datetime
+startTime = datetime.now()
 
 #fastq.gz with barcodes location: ~/data/barcodes1/outs/barcoded.fastq.gz 1-8
 parser = argparse.ArgumentParser(description='Processing barcodes from fastq records', epilog="Used libraries: gzip, collections, Bio, numpy, argparse.")
@@ -67,3 +69,8 @@ with ExitStack() as stack:
             for m in mins:
                 out_mins.write(str(m)+"\n")
             mbc.write(current_barcode + "\t" + str(len(mins)) + "\n")
+
+with open("summary.txt", "w+") as s:
+    s.write("Programm terminated succesfully.")
+    s.write("Time lapsed since begining: %i" % datetime.now() - startTime)
+
