@@ -12,21 +12,17 @@ parser = argparse.ArgumentParser(description='Processing barcodes from fastq rec
 parser.add_argument('infiles', metavar=('input'), help='input fastq.gz files with reads', nargs='+')
 args = parser.parse_args()
 
-'''
-numpy uint16 - 2 bajty w array
-2^8 - 2^16 histogramy dla różnych modulo
-'''
 def get_minimizer(k, read):
     minimizer = 2**16
     for i in range(len(read) - k + 1):
        hashed_kmer = hash(read[i:i+k]) % 2**16 #problem with negative values
-       if hashed_kmer <= minimizer: #rigthmost lowest value choosen
+       if hashed_kmer <= minimizer: #rigthmost lowest value chosen
           minimizer = hashed_kmer
     return minimizer
 
 def barcode(record):
    if "-1" in record.description:
-      return record.description.split(' ')[1].split(':')[2] 
+      return record.description.split(' ')[1].split(':')[2]
    else:
       return False
 
@@ -43,9 +39,12 @@ def process_barcode(current_barcode_records):
    #return bc_min_dict
    return np.array(minimizers, dtype="uint16")
 
+def next_valid(parser)
+    return
+
 with ExitStack() as stack:
    files = [stack.enter_context(gzip.open(fname, "rt")) for fname in args.infiles]
-   bc_min_dict = collections.defaultdict(list) 
+   bc_min_dict = collections.defaultdict(list)
    read_parsers = [SeqIO.parse(f, "fastq") for f in files]
    current_records = [next(parser) for parser in read_parsers]
    with open("minimizers.tsv", "w") as out_mins, open("mins_per_bc.tsv", "w") as mbc:
@@ -55,7 +54,7 @@ with ExitStack() as stack:
             while barcode(record) == False:
                try:
                   record=next(parser)
-               except:
+               except: #sprawdzic blad StopIteration
                   read_parsers.remove(parser)
                   current_records.remove(record)
             if barcode(record):
@@ -73,11 +72,6 @@ with ExitStack() as stack:
                except StopIteration:
                   read_parsers.remove(parser)
                   break
-            #while barcode(current_record) == False:
-            #   try:
-            #      current_record=next(parser)
-            #   except StopIteration:
-            #      read_parsers.remove(parser)
             new_records.append(current_record)
          current_records = new_records
          #d = process_barcode(current_barcode, current_barcode_records, bc_min_dict)
@@ -85,16 +79,3 @@ with ExitStack() as stack:
          for m in mins:
             out_mins.write(str(m)+"\n")
          mbc.write(current_barcode + "\t" + str(len(mins)) + "\n")
-
-#generate plots
-
-'''
-f, ax = plt.subplots(2, 1)
-
-ax[0].bar(min_per_bc.keys(), min_per_bc.values(), width = 0.2, color='g')
-ax[0].set_xticks(bc_names)
-ax[0].set_xticklabels(bc_names, rotation=65)
-ax[1].hist(mini_v, color='b')
-
-plt.show()
-'''
