@@ -66,11 +66,12 @@ with ExitStack() as stack:
                 new_records.append(current_record)
             current_records = new_records
             mins = process_barcode(current_barcode_records)
-            for m in mins:
-                out_mins.write(str(m)+"\n")
-            mbc.write(current_barcode + "\t" + str(len(mins)) + "\n")
+            if current_barcode != "BX:Z:0":
+                for m in mins:
+                    out_mins.write(str(m)+"\n")
+                mbc.write(current_barcode + "\t" + str(len(mins)) + "\n")
 
 with open("summary.txt", "w+") as s:
     s.write("Programm terminated succesfully.")
-    s.write("Time lapsed since begining: %i" % datetime.now() - startTime)
+    s.write("Time lapsed since begining: %s" % str(datetime.now() - startTime))
 
