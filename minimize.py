@@ -12,13 +12,16 @@ startTime = datetime.now()
 
 #fastq.gz with barcodes location: ~/data/barcodes1/outs/barcoded.fastq.gz 1-8
 parser = argparse.ArgumentParser(description='Processing barcodes from fastq records', epilog="Used libraries: gzip, collections, Bio, numpy, argparse.")
-parser.add_argument('infiles', metavar=('input'), help='input fastq.gz files with reads', nargs='+')
+#parser.add_argument('infiles', metavar=('input'), help='input fastq.gz files with reads', nargs='+')
+parser.add_argument('barcodes_dir', metavar=('bc_dir'), help='path to directory with longranger results')
+parser.add_argument('barcoded_files', metavar=('bc_files'), help='relative path with barcoded files in "barcodesx" directory')
+parser.add_argument('--modulo', type=int, default=2**16, help='modulo value for minimizers creation (default: 2**16)')
 args = parser.parse_args()
 
 def get_minimizer(k, read):
     minimizer = 2**16
     for i in range(len(read) - k + 1):
-        hashed_kmer = hash(read[i:i+k]) % 2**16 #problem with negative values
+        hashed_kmer = hash(read[i:i+k]) % args.modulo #problem with negative values
         if hashed_kmer <= minimizer: #rigthmost lowest value chosen
             minimizer = hashed_kmer
     return minimizer
@@ -45,7 +48,9 @@ def next_valid(parser):
     return
 
 with ExitStack() as stack:
-    files = [stack.enter_context(gzip.open(fname, "rt")) for fname in args.infiles]
+    paths = [args.barcodes_dir + "barcodes" + str(x) + args.barcoded_files for x in range(1,9)]
+    files = [stack.enter_context(gzip.open(fname, "rt")) for fname in paths]
+    print(files)
     bc_min_dict = collections.defaultdict(list)
     read_parsers = [SeqIO.parse(f, "fastq") for f in files]
     current_records = [next(parser) for parser in read_parsers]
