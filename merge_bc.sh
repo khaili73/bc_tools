@@ -7,4 +7,4 @@ awk -F'\t' -v OFS='\t' '{
         a[$1] = $2;
     }
 }
-END { for (i in a) print i, a[i]}' < part_mbc216.tsv
+END { for (i in a) print i, a[i]}' < mins_per_bc_mod216.tsv

@@ -7,22 +7,24 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-with open("./minimizers.tsv", "r") as f:
+with open("./minimizers_mod216.tsv", "r") as f:
    minimizers = []
    lines = f.readlines()
    for line in lines:
       minimizers.append(line.strip())    
 
-with open("./mins_per_bc.tsv", "r") as ff:
+with open("./mins_per_bc_mod216_uniq.tsv", "r") as ff:
    min_per_bc = []
    lines = ff.readlines()
    for line in lines:
       min_per_bc.append(line.strip().split()[1])
 
-max_m = int(max(minimizers))
-max_mbc = int(max(min_per_bc))
+#max_m = int(max(minimizers))
+#max_mbc = int(max(min_per_bc))
+max_m = 1000
+max_mbc = 100
 
-np.array(['1','2','3']).astype(np.float)
+#np.array(['1','2','3']).astype(np.float)
 m = np.array(minimizers).astype(np.int)
 mbc = np.array(min_per_bc).astype(np.int)
 
