@@ -3,6 +3,8 @@
 import gzip
 import collections
 from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.Alphabet import generic_dna
 import numpy as np
 import argparse
 from contextlib import ExitStack
@@ -12,9 +14,9 @@ import os
 #fastq.gz with barcodes location: ~/data/barcodes1/outs/barcoded.fastq.gz 1-8
 parser = argparse.ArgumentParser(description='Processing barcodes from fastq records', epilog="Used libraries: gzip, collections, Bio, numpy, argparse.")
 ###for local testing###
-#parser.add_argument('infiles', metavar=('input'), help='input fastq.gz files with reads', nargs='+')
-parser.add_argument('barcodes_dir', metavar=('bc_dir'), help='path to directory with longranger results')
-parser.add_argument('barcoded_files', metavar=('bc_files'), help='relative path with barcoded files in "barcodesx" directory')
+parser.add_argument('infiles', metavar=('input'), help='input fastq.gz files with reads', nargs='+')
+#parser.add_argument('barcodes_dir', metavar=('bc_dir'), help='path to directory with longranger results')
+#parser.add_argument('barcoded_files', metavar=('bc_files'), help='relative path with barcoded files in "barcodesx" directory')
 ###END###
 parser.add_argument('--x', default=8, help='number of directories with barcodes output')
 parser.add_argument('--out', default=os.environ['HOME'], help='output files directory')
@@ -25,10 +27,16 @@ args = parser.parse_args()
 
 def get_minimizer(k, read):
     minimizer = args.modulo
-    for i in range(len(read) - k + 1):
-        hashed_kmer = hash(read[i:i+k]) % args.modulo #problem with negative values
-        if hashed_kmer <= minimizer: #rigthmost lowest value chosen
-            minimizer = hashed_kmer
+    dna = Seq(read, generic_dna)
+    cdna = dna.reverse_complement()
+    for seq in str(dna), str(cdna):
+        last = minimizer
+        for i in range(len(seq) - k + 1):
+            hashed_kmer = hash(seq[i:i+k]) % args.modulo #problem with negative values
+            if hashed_kmer <= minimizer: #rigthmost lowest value chosen
+                minimizer = hashed_kmer
+        if last < minimizer:
+            minimizer = last
     return minimizer
 
 def get_barcode(record):
@@ -42,7 +50,8 @@ def process_barcode(current_barcode_records):
     for rec in current_barcode_records:
         minimizers.append(get_minimizer(21, str(rec.seq)))
     minimizers.sort()
-    return np.array(minimizers, dtype="uint16")
+    return minimizers
+    #return np.array(minimizers, dtype="uint16")
 
 def next_valid(parser):
     b = "BX:Z:0"
@@ -53,9 +62,9 @@ def next_valid(parser):
 
 with ExitStack() as stack:
     ###for local testing###
-    paths = [args.barcodes_dir + "/barcodes" + str(x) + args.barcoded_files for x in range(1,args.x+1)]
-    files = [stack.enter_context(gzip.open(fname, "rt")) for fname in paths]
-    #files = [stack.enter_context(gzip.open(fname, "rt")) for fname in args.infiles]
+    #paths = [args.barcodes_dir + "/barcodes" + str(x) + args.barcoded_files for x in range(1,args.x+1)]
+    #files = [stack.enter_context(gzip.open(fname, "rt")) for fname in paths]
+    files = [stack.enter_context(gzip.open(fname, "rt")) for fname in args.infiles]
     ###END###
     bc_min_dict = collections.defaultdict(list)
     read_parsers = [SeqIO.parse(f, "fastq") for f in files]
