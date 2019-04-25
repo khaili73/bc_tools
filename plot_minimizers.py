@@ -17,12 +17,12 @@ args = parser.parse_args()
 for f in args.infiles:
     name = f.split(".")[0]
     print(name)
-    data = pd.read_csv(f, sep="\t", names = ["Minimizers"])
+    data = pd.read_csv(f, sep="\t", names = ["minimizers"])
     stats = data.describe().to_csv(args.out + "/%s_description.tsv" % name, sep="\t")
-    #max_m = data.max()
-    max_m = 1000
+    max_m = data.max()
+    #max_m = 1000
     data.plot.hist(bins= range(0, max_m+max_m/10, max_m/10))
     plt.title('Minimizers occurance')
     plt.xlabel('Minimizers values')
     plt.grid(axis='y', linestyle='--')
-    plt.savefig(args.out + "/%s_hist1000.png" % name)
+    plt.savefig(args.out + "/%s_hist.png" % name)
