@@ -19,7 +19,7 @@ for f in args.infiles:
     print(name)
     data_in = pd.read_csv(f, sep="\t", names = ["barcodes", "minimizers_number"])
     data = data_in.minimizers_number
-    stats = data.describe().to_csv(args.out + "/%s_description.tsv" % name, sep="\t")
+    stats = data.describe().to_csv(args.out + "/%s_description.tsv" % name, header = False, sep="\t")
     max_m = data.max()
     #max_m = 1000
     data.plot.hist(bins= range(0, max_m+max_m/10, max_m/10))
