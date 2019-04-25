@@ -11,7 +11,7 @@ with open("./minimizers_mod216.tsv", "r") as f:
    minimizers = []
    lines = f.readlines()
    for line in lines:
-      minimizers.append(line.strip())    
+      minimizers.append(line.strip())
 
 with open("./mins_per_bc_mod216_uniq.tsv", "r") as ff:
    min_per_bc = []
