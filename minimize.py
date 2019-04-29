@@ -25,18 +25,15 @@ parser.add_argument('--mbc', default='/mins_per_bc.tsv', help='output minimizers
 parser.add_argument('--modulo', type=int, default=2**16, help='modulo value for minimizers creation (default: 2**16)')
 args = parser.parse_args()
 
-def get_minimizer(k, read):
+def get_minimizer(k, seq):
     minimizer = args.modulo
-    dna = Seq(read, generic_dna)
-    cdna = dna.reverse_complement()
-    for seq in str(dna), str(cdna):
-        last = minimizer
-        for i in range(len(seq) - k + 1):
-            hashed_kmer = hash(seq[i:i+k]) % args.modulo #problem with negative values
-            if hashed_kmer <= minimizer: #rigthmost lowest value chosen
-                minimizer = hashed_kmer
-        if last < minimizer:
-            minimizer = last
+    seq.alphabet = generic_dna
+    rc_seq = seq.reverse_complement()
+    for i in range(len(str(seq)) - k + 1):
+        kmers = [str(seq)[i:i+k], str(rc_seq)[i:i+k]]
+        hashed_kmer = min(map(lambda kmer : hash(kmer) % args.modulo, kmers)) #negative values problem
+        if hashed_kmer <= minimizer: #rigthmost lowest value chosen
+            minimizer = hashed_kmer
     return minimizer
 
 def get_barcode(record):
@@ -48,7 +45,7 @@ def get_barcode(record):
 def process_barcode(current_barcode_records):
     minimizers = []
     for rec in current_barcode_records:
-        minimizers.append(get_minimizer(21, str(rec.seq)))
+        minimizers.append(get_minimizer(21, rec.seq))
     minimizers.sort()
     return minimizers
     #return np.array(minimizers, dtype="uint16")
