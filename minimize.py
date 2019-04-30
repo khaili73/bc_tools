@@ -22,18 +22,22 @@ parser.add_argument('--x', default=8, help='number of directories with barcodes 
 parser.add_argument('--out', default=os.environ['HOME'], help='output files directory')
 parser.add_argument('--mins', default='/minimizers.tsv', help='output minimizers file name')
 parser.add_argument('--mbc', default='/mins_per_bc.tsv', help='output minimizers per barcode count file name')
-parser.add_argument('--modulo', type=int, default=2**16, help='modulo value for minimizers creation (default: 2**16)')
+parser.add_argument('--modulo', type=int, help='modulo value for minimizers creation')
 args = parser.parse_args()
 
-def get_minimizer(k, seq):
-    minimizer = args.modulo
-    seq.alphabet = generic_dna
-    rc_seq = seq.reverse_complement()
-    for i in range(len(str(seq)) - k + 1):
-        kmers = [str(seq)[i:i+k], str(rc_seq)[i:i+k]]
-        hashed_kmer = min(map(lambda kmer : hash(kmer) % args.modulo, kmers)) #negative values problem
-        if hashed_kmer <= minimizer: #rigthmost lowest value chosen
-            minimizer = hashed_kmer
+def get_minimizer(k, sequence):
+    sequence.alphabet = generic_dna
+    rc_sequence = sequence.reverse_complement
+    minimizer = abs(hash(str(sequence)[:3]))
+    for seq in str(sequence), str(rc_sequence):
+        for i in range(len(seq) - k + 1):
+            hashed_kmer = hash(seq[i:i+k])
+            if args.modulo:
+                hashed_kmer = hashed_kmer % args.modulo #negative values
+            if abs(hashed_kmer) <= minimizer: #rigthmost lowest value chosen
+                minimizer = abs(hashed_kmer)
+                rem_i = i
+                rem_seq = seq
     return minimizer
 
 def get_barcode(record):
