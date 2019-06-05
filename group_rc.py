@@ -10,7 +10,7 @@ bam_dir = "/Users/khaili/mgr/test_data/sorted_bams/"
 #tiki
 #bam_dir = ""
 
-with open("groups_stats.tsv", 'w') as f:
+with open("groups_stats.tsv", 'a') as f:
     #groups = defaultdict(list)
     for filename in os.listdir(bam_dir):
         groups = []
