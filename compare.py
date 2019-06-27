@@ -69,4 +69,7 @@ valid_bc = choose_valid_barcodes(valid_mins, 30)
 bcm_big, bcm_small = set_footprints(valid_bc, valid_mins, 100, 30)
 cp_dict = compare_footprints(bcm_small, bcm_big, vm_number)
 
-print(cp_dict)
+with open('comparison.tsv', 'w') as f:
+    for bca, bc in cp_dict.items():
+        for bcb, v in bc.items():
+            f.write("\t".join([bca,bcb,str(round(v["pvalue"],4)),str(v["cp"]),"\n"]))
