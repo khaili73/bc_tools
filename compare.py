@@ -1,75 +1,118 @@
 #!/usr/bin/env python3
 
-import collections
 import pickle
 from scipy.stats import hypergeom
+from collections import Counter, namedtuple
+
+all_mins_file = ''
+bc_mins_file = ''
 
 ### COMPARISON ###
 
-def choose_valid_minimizers(minimizer_frequency, barcodes_minimizers, lim):
-    #add data
-    all_valid_mins = set()
-    #end add data
-    valid_minimizers = collections.defaultdict(list)
+def set_footprints(barcodes, barcodes_minimizers, number):
+    footprints = {}
+    for bc in barcodes:
+        barcodes_minimizers[bc].sort(reverse=True)
+        ftp = barcodes_minimizers[bc][:number]
+        footprints[bc] = set(ftp)
+    return footprints
+
+
+def compare_footprints(mins_a, mins_b):
+    common_part = mins_a.intersection(mins_b)
+    if common_part:
+        return common_part
+
+
+def count_pvalue(mins_a, mins_b, common_part, valid_minimizers_number):
+    return hypergeom.sf(len(common_part), valid_minimizers_number, len(mins_a), len(mins_b))
+
+
+def undo_pickle(path):
+    with open(path, 'rb') as f:
+        obj = pickle.load(f)
+    return obj
+
+
+def do_pickle(path, obj):
+    with open(path, "wb") as f:
+        pickle.dump(obj, f)
+
+
+def choose_frequent(minimizers, cutoff):
+    minimizers_frequency = Counter(minimizers)
+    return [min for min, frequency in minimizers_frequency.items() if frequency > cutoff]
+
+
+def sift_minimizers(bcs_with_mins, black_list):
+    sagnificant_barcodes = {}
+    for bc, mins in bcs_with_mins.items():
+        sagnificant_mins = [min for min in mins if min not in black_list]
+        sagnificant_barcodes[bc] = sagnificant_mins
+    return sagnificant_barcodes
+
+
+def group_barcodes(barcodes_minimizers, s_sup, m_sup):
+    small = []
+    medium = []
+    large = []
+    group = namedtuple('group', ['small', 'medium', 'large'])
     for bc, mins in barcodes_minimizers.items():
-        for m in set(mins):
-            if minimizer_frequency[m] < lim:
-                valid_minimizers[bc].append(m)
-                #add data
-                all_valid_mins.add(m)
-                #end add data
-    return valid_minimizers, all_valid_mins
-
-def choose_valid_barcodes(valid_minimizers, lim):
-    valid_barcodes = []
-    for bc, mins in valid_minimizers.items():
-        if len(mins) > lim:
-            valid_barcodes.append(bc)
-    return valid_barcodes
-
-def set_footprints(valid_barcodes, valid_minimizers, lim_big, lim_small):
-    bcm_big = {}
-    bcm_small = {}
-    for bc in valid_barcodes:
-        mins = valid_minimizers[bc]
-        if len(mins) > lim_big:
-            m = sorted(mins)[:lim_big]
-            bcm_big[bc] = set(m)
+        if len(mins) < s_sup:
+            small.append(bc)
+        elif len(mins) < m_sup:
+            medium.append(bc)
         else:
-            m = sorted(mins)[:lim_small]
-            bcm_small[bc] = set(m)
-    return bcm_big, bcm_small
+            large.append(bc)
+    return group(small, medium, large)
 
-def compare_footprints(setA, setB, valid_minimizers_number):
-    common_part = {}
-    for bca, a in setA.items():
-        for bcb, b in setB.items():
-            cp = a.intersection(b)
-            if cp:
-                common_part[bca] = {}
-                common_part[bca][bcb] = {}
-                common_part[bca][bcb]["cp"] = cp
-                common_part[bca][bcb]["pvalue"] = hypergeom.sf(len(cp), valid_minimizers_number, len(a), len(b))
-    return common_part
 
-with open('/Users/khaili/all_mins.pickle', 'rb') as f:
-    all_mins = pickle.load(f)
+def list_to_str(alist):
+    return ','.join([str(a) for a in alist])
 
-with open('/Users/khaili/bc_mins.pickle', 'rb') as f:
-    bc_mins = pickle.load(f)
+def save_comparison(f_name, footprints_a, footprints_b, valid_minimizers_number):
+    with open(f_name, 'w') as f:
+        for a_bc, a_mins in footprints_a.items():
+            for b_bc, b_mins in footprints_b.items():
+                common_part = compare_footprints(a_mins, b_mins)
+                if common_part:
+                    pvalue = count_pvalue(a_mins, b_mins, common_part, valid_minimizers_number)
+                    s_pvalue = str(round(pvalue, 4))
+                    s_cp = list_to_str(common_part)
+                    f.write("\t".join([a_bc, b_bc, s_pvalue, s_cp, "\n"]))
+    return
 
-#use bc_mins and all_mins from minimize.py
-mins_freq = {m:all_mins.count(m) for m in all_mins}
-valid_mins, vm_set = choose_valid_minimizers(mins_freq, bc_mins, 10000)
 
-#how many minimizers are less frequent than 10000
-vm_number = len(vm_set)
-valid_bc = choose_valid_barcodes(valid_mins, 30)
+def save_footprint_info(f_name, footprint, sagnificant_bcmins):
+    with open(f_name, 'w') as f:
+        for bc, ftp in footprint.items():
+            all_mins = sagnificant_bcmins[bc]
+            s_ftp = list_to_str(ftp)
+            s_mins = list_to_str(all_mins)
+            f.write("\t".join([bc, s_ftp, s_mins, "\n"]))
+    return
 
-bcm_big, bcm_small = set_footprints(valid_bc, valid_mins, 100, 30)
-cp_dict = compare_footprints(bcm_small, bcm_big, vm_number)
 
-with open('comparison.tsv', 'w') as f:
-    for bca, bc in cp_dict.items():
-        for bcb, v in bc.items():
-            f.write("\t".join([bca,bcb,str(round(v["pvalue"],4)),str(v["cp"]),"\n"]))
+mins = undo_pickle(all_mins_file)
+mins_black_list = choose_frequent(mins, 1000)
+
+do_pickle('black_list.pickle', mins_black_list)
+
+valid_minimizers_number = len(mins) - len(mins_black_list)
+
+barcode_minimizers = undo_pickle(bc_mins_file)
+sagnificant_bcmins = sift_minimizers(barcode_minimizers, mins_black_list)
+
+group = group_barcodes(sagnificant_bcmins, 30, 100)
+
+footprints_small = set_footprints(group.small, sagnificant_bcmins, -1)
+footprints_medium = set_footprints(group.medium, sagnificant_bcmins, 30)
+footprints_large = set_footprints(group.large, sagnificant_bcmins, 100)
+
+ftps = (footprints_small, footprints_medium, footprints_large)
+fnames = ('footprint_S.tsv', 'footprint_M.tsv', 'footprints_L.tsv')
+for ftp, fname in zip(ftps, fnames):
+    save_footprint_info(fname, ftp, sagnificant_bcmins)
+
+save_comparison('comparison_ML.tsv', footprints_medium, footprints_large, valid_minimizers_number)
+save_comparison('comparison_SM.tsv', footprints_medium, footprints_small, valid_minimizers_number)
