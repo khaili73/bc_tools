@@ -4,8 +4,8 @@ import pickle
 from scipy.stats import hypergeom
 from collections import Counter, namedtuple
 
-all_mins_file = ''
-bc_mins_file = ''
+all_mins_file = '/home/kwegrzyn/data/mod24_pickles/all_mins.pickle'
+bc_mins_file = '/home/kwegrzyn/data/mod24_pickles/bc_mins.pickle'
 
 ### COMPARISON ###
 
@@ -96,7 +96,7 @@ def save_footprint_info(f_name, footprint, sagnificant_bcmins):
 mins = undo_pickle(all_mins_file)
 mins_black_list = choose_frequent(mins, 1000)
 
-do_pickle('black_list.pickle', mins_black_list)
+do_pickle('/home/kwegrzyn/data/black_list.pickle', mins_black_list)
 
 valid_minimizers_number = len(mins) - len(mins_black_list)
 
@@ -110,9 +110,9 @@ footprints_medium = set_footprints(group.medium, sagnificant_bcmins, 30)
 footprints_large = set_footprints(group.large, sagnificant_bcmins, 100)
 
 ftps = (footprints_small, footprints_medium, footprints_large)
-fnames = ('footprint_S.tsv', 'footprint_M.tsv', 'footprints_L.tsv')
+fnames = ('/home/kwegrzyn/data/footprint_S.tsv', '/home/kwegrzyn/data/footprint_M.tsv', '/home/kwegrzyn/data/footprints_L.tsv')
 for ftp, fname in zip(ftps, fnames):
     save_footprint_info(fname, ftp, sagnificant_bcmins)
 
-save_comparison('comparison_ML.tsv', footprints_medium, footprints_large, valid_minimizers_number)
-save_comparison('comparison_SM.tsv', footprints_medium, footprints_small, valid_minimizers_number)
+save_comparison('/home/kwegrzyn/data/comparison_ML.tsv', footprints_medium, footprints_large, valid_minimizers_number)
+save_comparison('/home/kwegrzyn/data/comparison_SM.tsv', footprints_medium, footprints_small, valid_minimizers_number)
