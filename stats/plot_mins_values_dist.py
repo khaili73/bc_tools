@@ -3,9 +3,7 @@
 import matplotlib
 matplotlib.use("AGG")
 
-import matplotlib.pyplot as plt
 import seaborn as sns
-import pandas as pd
 import pickle
 
 
@@ -20,7 +18,5 @@ def undo_pickle(path):
 
 
 wm = undo_pickle(wm_file)
-sns.distplot
-plt.scatter(df.groups[:200], df.reads[:200])
-plt.axis([0, 10, 0, 300])
-plt.savefig('scatter_groups.pdf')
+plot = sns.distplot(wm, bins=20, kde=False)
+plot.savefig("white_mins_dist.pdf")
