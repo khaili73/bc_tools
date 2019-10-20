@@ -1,14 +1,13 @@
-#!/usr/bin/env python2.7
-
+#!/usr/bin/env python3
 import matplotlib
 matplotlib.use("AGG")
-
 import seaborn as sns
 import pickle
 
 
 #tiki
-wm_file = "/home/kwegrzyn/data/comparison/all_white_mins.pickle"
+# wm_file = "/home/kwegrzyn/data/comparison/all_white_mins.pickle"
+wm_file = "/home/kwegrzyn/data/comparison/all_black_mins.pickle"
 plot_file = '/home/kwegrzyn/data/plots'
 
 def undo_pickle(path):
@@ -18,5 +17,6 @@ def undo_pickle(path):
 
 
 wm = undo_pickle(wm_file)
-plot = sns.distplot(wm, bins=20, kde=False)
-plot.savefig("white_mins_dist.pdf")
+ax = sns.distplot(wm, bins=20, kde=False)
+sns_plot = ax.get_figure()
+sns_plot.savefig("black_mins_dist.pdf")
