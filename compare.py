@@ -25,7 +25,7 @@ def compare_footprints(mins_a, mins_b):
 
 
 def count_pvalue(mins_a, mins_b, common_part, valid_minimizers_number):
-    return hypergeom.sf(len(common_part), valid_minimizers_number, len(mins_a), len(mins_b))
+    return hypergeom.sf(len(common_part) - 1, valid_minimizers_number, len(mins_a), len(mins_b))
 
 
 def undo_pickle(path):
@@ -77,7 +77,9 @@ def save_comparison(f_name, footprints_a, footprints_b, valid_minimizers_number)
                 common_part = compare_footprints(a_mins, b_mins)
                 if common_part:
                     pvalue = count_pvalue(a_mins, b_mins, common_part, valid_minimizers_number)
-                    s_pvalue = str(round(pvalue, 4))
+                    s_pvalue = str(pvalue)
+                    # rounded p-value
+                    # s_pvalue = str(round(pvalue, 4))
                     s_cp = list_to_str(common_part)
                     f.write("\t".join([a_bc, b_bc, s_pvalue, s_cp, "\n"]))
     return
