@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import gzip
-import collections
-from Bio import SeqIO
+from collections import namedtuple, defaultdict
+# from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
 import numpy as np
@@ -25,6 +25,20 @@ parser.add_argument('--mbc', default='/mins_per_bc.tsv', help='output minimizers
 parser.add_argument('--modulo', type=int, default=2**16, help='modulo value for minimizers creation (default: 2**16)')
 args = parser.parse_args()
 
+def parse_fastq(f):
+    record = namedtuple('record', 'header, sequence, plusline, quality')
+    handle = open(f)
+    while True:
+        try:
+            record_header = next(handle).strip("\n")
+            record_seq = next(handle).strip("\n")
+            record_plus = next(handle)
+            record_quality = next(handle).strip("\n")
+            yield record(record_header, record_seq, record_plus, record_quality)
+        except StopIteration:
+            handle.close()
+            break
+
 def get_minimizer(k, read):
     minimizer = args.modulo
     dna = Seq(read, generic_dna)
@@ -40,15 +54,15 @@ def get_minimizer(k, read):
     return minimizer
 
 def get_barcode(record):
-    if re.search("BX:Z:[ATCG]{16}-1", record.description):
-        return re.search("BX:Z:[ATCG]{16}-1", record.description).group()
+    if re.search("BX:Z:[ATCG]{16}-1", record.header):
+        return re.search("BX:Z:[ATCG]{16}-1", record.header).group()
     else:
         return "BX:Z:0"
 
 def process_barcode(current_barcode_records):
     minimizers = []
     for rec in current_barcode_records:
-        minimizers.append(get_minimizer(21, str(rec.seq)))
+        minimizers.append(get_minimizer(21, str(rec.sequence)))
     minimizers.sort()
     return minimizers
     #return np.array(minimizers, dtype="uint16")
@@ -60,14 +74,19 @@ def next_valid(parser):
         b = get_barcode(current_record)
     return current_record
 
+def write_fastq(records, output):
+    for record in records:
+        output.write(f'{record.header}\n{record.sequence}\n{record.plusline}\n{record.quality}\n')
+    return
+
 with ExitStack() as stack:
     ###for local testing###
     paths = [args.barcodes_dir + "/barcodes" + str(x) + args.barcoded_files for x in range(1,args.x+1)]
     files = [stack.enter_context(gzip.open(fname, "rt")) for fname in paths]
     #files = [stack.enter_context(gzip.open(fname, "rt")) for fname in args.infiles]
     ###END###
-    bc_min_dict = collections.defaultdict(list)
-    read_parsers = [SeqIO.parse(f, "fastq") for f in files]
+    bc_min_dict = defaultdict(list)
+    read_parsers = [parse_fastq(f) for f in files]
     current_records = []
     new_parsers = []
     for parser in read_parsers:
@@ -94,5 +113,5 @@ with ExitStack() as stack:
                 pass
         current_records = new_records
         read_parsers = new_parsers
-        with open("%s.fastq" % current_barcode, "w") as output_handle:
-            SeqIO.write(current_barcode_records, output_handle, "fastq")
+        with open(f'{current_barcode}.fastq', "w") as output_handle:
+            write_fastq(current_barcode_records, output_handle)
