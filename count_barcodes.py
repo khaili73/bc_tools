@@ -10,9 +10,8 @@ paths = [barcodes_dir + "/barcodes" + str(x) + reads for x in range(1,9)]
 
 all_bc = []
 
-def parse_fastq(path):
+def parse_fastq(handle):
     record = namedtuple('record', 'header, sequence, quality')
-    handle = open(path)
     while True:
         try:
             record_header = next(handle).strip("\n")
@@ -25,6 +24,7 @@ def parse_fastq(path):
             break
 
 for path in paths:
+    print(path)
     with gzip.open(path, 'rt') as file:
         read_parser = parse_fastq(file)
         for record in read_parser:

@@ -30,14 +30,13 @@ barcodes_dir = "/home/kwegrzyn/data/post-longranger"
 barcoded_files = "/outs/barcoded.fastq.gz"
 
 ### MINIMIZERS ###
-def parse_fastq(f):
+def parse_fastq(handle):
     record = namedtuple('record', 'header, sequence, plusline, quality')
-    handle = open(f)
     while True:
         try:
             record_header = next(handle).strip("\n")
             record_seq = next(handle).strip("\n")
-            record_plus = next(handle)
+            record_plus = next(handle).strip("\n")
             record_quality = next(handle).strip("\n")
             yield record(record_header, record_seq, record_plus, record_quality)
         except StopIteration:
@@ -60,8 +59,8 @@ def get_minimizer(k, sequence):
     return minimizer
 
 def get_barcode(record):
-    if re.search("BX:Z:[ATCG]{16}-1", record.sequence):
-        return re.search("BX:Z:[ATCG]{16}-1", record.sequence).group()
+    if re.search("BX:Z:[ATCG]{16}-1", record.header):
+        return re.search("BX:Z:[ATCG]{16}-1", record.header).group()
     else:
         return "BX:Z:0"
 
@@ -107,7 +106,12 @@ def parse_barcodes(current_barcode, read_parsers, current_records):
             pass
     return new_records, new_parsers, current_barcode_records
 
-def create_barcodes_minimizers_map(read_parsers, current_records):
+def write_fastq(records, output):
+    for record in records:
+        output.write(f'{record.header}\n{record.sequence}\n{record.plusline}\n{record.quality}\n')
+    return
+
+def create_barcodes_minimizers_map(read_parsers, current_records, bc_handle, min_handle):
     bc_mins = {}
     #additional data
     all_mins = []
@@ -118,30 +122,33 @@ def create_barcodes_minimizers_map(read_parsers, current_records):
         with open(f'/home/kwegrzyn/data/grouped_by_barcode/{current_barcode}.fastq', "w") as output_handle:
             write_fastq(current_barcode_records, output_handle)
         mins = process_barcode(current_barcode_records)
-        bc_mins[current_barcode] = list(set(mins)) #unique mins
+        min_handle.write("\n".join([str(m) for m in mins])+"\n")
+        bc_mins = list(set(mins)) # uniq mins
+        mins_len = str(len(bc_mins))
+        bc_handle.write(f"{current_barcode}\t{mins_len}\t{bc_mins}\n")
+        #bc_mins[current_barcode] = list(set(mins))
         #additional data
-        all_mins.extend(mins)
+        #all_mins.extend(mins)
         #end add data
-    return bc_mins, all_mins
-
-def write_fastq(records, output):
-    for record in records:
-        output.write(f'{record.header}\n{record.sequence}\n{record.plusline}\n{record.quality}\n')
+    #return bc_mins, all_mins
     return
 
 with ExitStack() as stack:
     ###for local testing###
     paths = [barcodes_dir + "/barcodes" + str(x) + barcoded_files for x in range(1,args.x+1)]
+    #paths = ["/home/kwegrzyn/data/post-longranger/test_data.fastq.gz", "/home/kwegrzyn/data/post-longranger/test_data2.fastq.gz"]
     files = [stack.enter_context(gzip.open(fname, "rt")) for fname in paths]
     #files = [stack.enter_context(gzip.open(fname, "rt")) for fname in args.infiles]
     ###END###
     read_parsers = [parse_fastq(f) for f in files]
     read_parsers, current_records = clean_records(read_parsers)
-    bc_mins, all_mins = create_barcodes_minimizers_map(read_parsers, current_records)
+    with open("/home/kwegrzyn/data/bc_mins.tsv", 'w') as bc_handle, open("/home/kwegrzyn/data/all_mins.tsv", 'w') as min_handle:
+        create_barcodes_minimizers_map(read_parsers, current_records, bc_handle, min_handle)
+    #bc_mins, all_mins = create_barcodes_minimizers_map(read_parsers, current_records)
 
-with open("/home/kwegrzyn/data/all_mins.pickle", "wb") as f:
-    pickle.dump(all_mins, f)
+#with open("/home/kwegrzyn/data/all_mins.pickle", "wb") as f:
+#    pickle.dump(all_mins, f)
 
-with open("/home/kwegrzyn/data/bc_mins.pickle", "wb") as f:
-    pickle.dump(bc_mins, f)
+#with open("/home/kwegrzyn/data/bc_mins.pickle", "wb") as f:
+#    pickle.dump(bc_mins, f)
 
