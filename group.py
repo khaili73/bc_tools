@@ -113,5 +113,5 @@ with ExitStack() as stack:
                 pass
         current_records = new_records
         read_parsers = new_parsers
-        with open(f'{current_barcode}.fastq', "w") as output_handle:
+        with open(f'{current_barcode}.fastq', "a") as output_handle:
             write_fastq(current_barcode_records, output_handle)
